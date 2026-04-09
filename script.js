@@ -1,4 +1,4 @@
-<script>
+
 // ── Chart data ──
 const hours12 = ['12am','1','2','3','4','5','6','7','8','9','10','11am'];
 const tempData = [24,24,23,25,26,27,29,30,31,30,28,28];
@@ -203,4 +203,4 @@ Give a short, practical farming answer.
 
   input.value = "";
 }
-</script>
+
