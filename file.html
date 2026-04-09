@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriSense — Smart Farm Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-50: #f0faf3;
+    --green-100: #d6f0de;
+    --green-200: #a8dbb8;
+    --green-400: #5ab57a;
+    --green-600: #2e8a52;
+    --green-800: #1a5433;
+    --green-900: #0e3320;
+    --blue-50: #eff7ff;
+    --blue-400: #3b82f6;
+    --blue-600: #1d5fbe;
+    --amber-50: #fffbeb;
+    --amber-400: #f59e0b;
+    --amber-600: #b45309;
+    --red-50: #fef2f2;
+    --red-400: #f87171;
+    --red-600: #b91c1c;
+    --gray-50: #f8faf7;
+    --gray-100: #eef2eb;
+    --gray-200: #dce5d8;
+    --gray-300: #c4d0bf;
+    --gray-400: #9aad93;
+    --gray-500: #6e826a;
+    --gray-600: #4d5e4a;
+    --gray-700: #374034;
+    --gray-800: #232b21;
+    --gray-900: #141a12;
+    --sidebar-width: 230px;
+    --topbar-height: 60px;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+    --transition: 0.18s ease;
+  }
+
+  html, body { height: 100%; font-family: var(--font); background: var(--gray-50); color: var(--gray-800); font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+  /* ── Layout ── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--gray-900);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+    transition: width var(--transition);
+  }
+
+  .sidebar-logo {
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .logo-leaf {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    background: var(--green-600);
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .logo-leaf svg { width: 20px; height: 20px; fill: #fff; }
+  .logo-name { font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+  .logo-tagline { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+  .nav-group { padding: 16px 0 8px; }
+  .nav-group-label {
+    font-size: 10px; font-weight: 600;
+    color: var(--gray-500);
+    padding: 0 20px 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 20px;
+    color: var(--gray-400);
+    font-size: 13.5px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all var(--transition);
+    position: relative;
+    user-select: none;
+  }
+  .nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+  .nav-item.active {
+    color: #fff;
+    background: rgba(90, 181, 122, 0.15);
+    border-left-color: var(--green-400);
+    font-weight: 500;
+  }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.8; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--red-600);
+    color: #fff;
+    font-size: 10px; font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 20px;
+  }
+
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+  .topbar {
+    height: var(--topbar-height);
+    background: #fff;
+    border-bottom: 1px solid var(--gray-100);
+    padding: 0 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-title { font-size: 15px; font-weight: 600; color: var(--gray-800); }
+  .live-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: var(--green-50);
+    color: var(--green-600);
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--green-100);
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green-400);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-md); font-size: 12.5px; font-weight: 500; cursor: pointer; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-600); transition: all var(--transition); font-family: var(--font); }
+  .btn:hover { background: var(--gray-50); border-color: var(--gray-300); color: var(--gray-800); }
+  .btn-primary { background: var(--green-600); border-color: var(--green-600); color: #fff; }
+  .btn-primary:hover { background: var(--green-800); border-color: var(--green-800); }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* ── Content ── */
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; background: var(--gray-50); }
+  .section { display: none; animation: fadeIn 0.2s ease; }
+  .section.active { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── Metric Cards ── */
+  .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .metric-card {
+    background: #fff;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow var(--transition);
+  }
+  .metric-card:hover { box-shadow: var(--shadow-lg); }
+  .metric-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .metric-label { font-size: 12px; color: var(--gray-400); font-weight: 500; }
+  .metric-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .metric-icon svg { width: 16px; height: 16px; }
+  .metric-icon.temp { background: #fff4e6; }
+  .metric-icon.temp svg { color: #e67e22; }
+  .metric-icon.soil { background: var(--blue-50); }
+  .metric-icon.soil svg { color: var(--blue-600); }
+  .metric-icon.rain { background: #edf5ff; }
+  .metric-icon.rain svg { color: #2563eb; }
+  .metric-value { font-size: 28px; font-weight: 600; color: var(--gray-900); line-height: 1; letter-spacing: -1px; }
+  .metric-unit { font-size: 14px; font-weight: 400; color: var(--gray-400); margin-left: 2px; }
+  .metric-footer { margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+  .status-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+  .status-ok { background: var(--green-50); color: var(--green-600); border: 1px solid var(--green-100); }
+  .status-warn { background: var(--amber-50); color: var(--amber-600); border: 1px solid #fde68a; }
+  .status-alert { background: var(--red-50); color: var(--red-600); border: 1px solid #fecaca; }
+
+  /* ── Chart Cards ── */
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .chart-card {
+    background: #fff;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+  }
+  .chart-card-full {
+    background: #fff;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-card);
+    margin-bottom: 16px;
+  }
+  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  .chart-sub { font-size: 11px; color: var(--gray-400); }
+
+  /* ── AI Card ── */
+  .ai-card {
+    background: linear-gradient(135deg, #f0faf3 0%, #eff7ff 100%);
+    border: 1px solid var(--green-100);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .ai-orb { width: 22px; height: 22px; border-radius: 50%; background: var(--green-600); display: flex; align-items: center; justify-content: center; }
+  .ai-orb svg { width: 12px; height: 12px; fill: #fff; }
+  .ai-title { font-size: 13px; font-weight: 600; color: var(--green-800); }
+  .ai-badge { font-size: 10px; background: #fff; color: var(--green-600); border: 1px solid var(--green-200); padding: 2px 7px; border-radius: 10px; margin-left: auto; }
+  .ai-body { font-size: 13px; color: var(--gray-600); line-height: 1.7; min-height: 40px; }
+  .ai-loading { color: var(--gray-400); font-style: italic; }
+  .ai-actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ── Section header ── */
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .section-title { font-size: 15px; font-weight: 600; color: var(--gray-800); }
+
+  /* ── List card ── */
+  .list-card { background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 16px; box-shadow: var(--shadow-card); }
+  .list-head { padding: 12px 18px; border-bottom: 1px solid var(--gray-100); font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.07em; }
+  .list-item { padding: 12px 18px; border-bottom: 1px solid var(--gray-100); display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--gray-700); transition: background var(--transition); }
+  .list-item:last-child { border-bottom: none; }
+  .list-item:hover { background: var(--gray-50); }
+  .tag { font-size: 11px; padding: 2px 9px; border-radius: 20px; font-weight: 500; }
+  .tag-green { background: var(--green-50); color: var(--green-600); }
+  .tag-amber { background: var(--amber-50); color: var(--amber-600); }
+  .tag-red { background: var(--red-50); color: var(--red-600); }
+  .tag-blue { background: var(--blue-50); color: var(--blue-600); }
+
+  /* ── Alert items ── */
+  .alert-item { padding: 14px 18px; display: flex; gap: 14px; border-bottom: 1px solid var(--gray-100); transition: background var(--transition); }
+  .alert-item:last-child { border-bottom: none; }
+  .alert-item:hover { background: var(--gray-50); }
+  .alert-severity { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .sev-red { background: var(--red-400); }
+  .sev-amber { background: var(--amber-400); }
+  .sev-green { background: var(--green-400); }
+  .alert-msg { font-size: 13px; font-weight: 500; color: var(--gray-700); }
+  .alert-meta { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+  .alert-actions { margin-left: auto; display: flex; gap: 6px; align-items: flex-start; }
+  .btn-xs { font-size: 11px; padding: 3px 9px; border-radius: 6px; cursor: pointer; border: 1px solid var(--gray-200); background: #fff; color: var(--gray-500); font-family: var(--font); transition: all var(--transition); }
+  .btn-xs:hover { background: var(--gray-50); }
+
+  /* ── Crop cards ── */
+  .crops-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .crop-card {
+    background: #fff;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    cursor: pointer;
+    transition: all var(--transition);
+    box-shadow: var(--shadow-card);
+  }
+  .crop-card:hover { box-shadow: var(--shadow-lg); border-color: var(--gray-200); }
+  .crop-card.selected { border-color: var(--green-400); background: var(--green-50); }
+  .crop-emoji { font-size: 22px; margin-bottom: 8px; }
+  .crop-name { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+  .crop-stage { font-size: 11px; color: var(--gray-400); margin-top: 2px; margin-bottom: 10px; }
+  .crop-progress { height: 4px; background: var(--gray-100); border-radius: 2px; overflow: hidden; }
+  .crop-bar { height: 100%; border-radius: 2px; background: var(--green-400); transition: width 0.6s ease; }
+  .crop-bar.harvest { background: var(--amber-400); }
+  .crop-add { border: 1.5px dashed var(--gray-200); background: var(--gray-50); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 6px; }
+  .crop-add:hover { border-color: var(--green-400); background: var(--green-50); }
+  .crop-add-icon { font-size: 20px; color: var(--gray-300); }
+  .crop-add-text { font-size: 12px; color: var(--gray-400); }
+
+  /* ── Settings ── */
+  .settings-group { background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow-card); }
+  .settings-group-title { font-size: 13px; font-weight: 600; color: var(--gray-700); padding-bottom: 12px; border-bottom: 1px solid var(--gray-100); margin-bottom: 12px; }
+  .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; color: var(--gray-600); }
+  .settings-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .settings-label { display: flex; flex-direction: column; gap: 2px; }
+  .settings-hint { font-size: 11px; color: var(--gray-400); }
+  .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+  .toggle { width: 38px; height: 22px; border-radius: 11px; border: none; cursor: pointer; position: relative; transition: background var(--transition); background: var(--green-500, #22c55e); padding: 0; }
+  .toggle.off { background: var(--gray-200); }
+  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #fff; top: 3px; right: 3px; transition: right 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle.off::after { right: 19px; }
+  input[type="number"], input[type="text"], input[type="password"] { font-size: 12.5px; border: 1px solid var(--gray-200); background: var(--gray-50); color: var(--gray-700); padding: 6px 10px; border-radius: var(--radius-sm); font-family: var(--font); transition: border-color var(--transition); outline: none; }
+  input[type="number"]:focus, input[type="text"]:focus, input[type="password"]:focus { border-color: var(--green-400); background: #fff; }
+  input[type="number"] { width: 70px; }
+  select { font-size: 12.5px; border: 1px solid var(--gray-200); background: var(--gray-50); color: var(--gray-700); padding: 6px 10px; border-radius: var(--radius-sm); font-family: var(--font); outline: none; cursor: pointer; }
+  .api-input-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .api-input-row input { flex: 1; }
+  .conn-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .conn-ok { background: var(--green-50); color: var(--green-600); }
+  .conn-none { background: var(--gray-100); color: var(--gray-400); }
+
+  /* ── Irrigation ── */
+  .zone-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 16px; }
+  .zone-card { background: #fff; border: 1px solid var(--gray-100); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow-card); }
+  .zone-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .zone-name { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  .zone-crop { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+  .zone-moisture { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .zone-mval { font-size: 20px; font-weight: 600; color: var(--gray-800); }
+  .zone-munit { font-size: 11px; color: var(--gray-400); }
+  .zone-bar-wrap { height: 6px; background: var(--gray-100); border-radius: 3px; margin-bottom: 10px; }
+  .zone-bar { height: 6px; border-radius: 3px; }
+  .zone-foot { display: flex; justify-content: space-between; align-items: center; }
+  .zone-last { font-size: 11px; color: var(--gray-400); }
+  .irrigate-btn { font-size: 11.5px; padding: 5px 12px; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--blue-400); background: var(--blue-50); color: var(--blue-600); font-family: var(--font); font-weight: 500; transition: all var(--transition); }
+  .irrigate-btn:hover { background: var(--blue-400); color: #fff; }
+  .irrigate-btn.active { background: var(--blue-400); color: #fff; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 3px; }
+  .ai-input-box {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ai-input-box input {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
+  outline: none;
+}
+/*chatbox*/
+.ai-input-box button {
+  background: var(--green-600);
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.ai-input-box button:hover {
+  background: var(--green-800);
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-leaf">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 008 20C19 20 22 3 22 3c-1 2-8 7-8 7z"/></svg>
+      </div>
+      <div class="logo-name">AgriSense</div>
+      <div class="logo-tagline">Smart Farm Dashboard</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Monitor</div>
+      <div class="nav-item active" onclick="showSection('dashboard', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="showSection('history', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        History
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Manage</div>
+      <div class="nav-item" onclick="showSection('crops', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22V12M12 12C12 7 7 3 2 3s4 8 10 9M12 12c0-5 5-9 10-9s-4 8-10 9"/></svg>
+        Crop Activity
+      </div>
+      <div class="nav-item" onclick="showSection('irrigation', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        Irrigation
+      </div>
+      <div class="nav-item" onclick="showSection('alerts', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alerts
+        <span class="nav-badge">3</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">System</div>
+      <div class="nav-item" onclick="showSection('settings', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main ── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title" id="topbar-title">Dashboard Overview</div>
+        <div class="live-pill"><div class="live-dot"></div> Live</div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn" onclick="refreshData()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.79"/></svg>
+          Refresh
+        </button>
+        <button class="btn btn-primary" onclick="askMistral()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          AI Insight
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="section-dashboard">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-top">
+              <div class="metric-label">Temperature</div>
+              <div class="metric-icon temp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#e67e22"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+              </div>
+            </div>
+            <div class="metric-value" id="temp-val">28<span class="metric-unit">°C</span></div>
+            <div class="metric-footer"><span class="status-badge status-ok" id="temp-status">Normal range</span></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top">
+              <div class="metric-label">Soil Moisture</div>
+              <div class="metric-icon soil">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#1d5fbe"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+              </div>
+            </div>
+            <div class="metric-value" id="soil-val">62<span class="metric-unit">%</span></div>
+            <div class="metric-footer"><span class="status-badge status-ok" id="soil-status">Adequate</span></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-top">
+              <div class="metric-label">Rainfall (24h)</div>
+              <div class="metric-icon rain">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#2563eb"><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>
+              </div>
+            </div>
+            <div class="metric-value" id="rain-val">14<span class="metric-unit">mm</span></div>
+            <div class="metric-footer"><span class="status-badge status-warn" id="rain-status">Above avg</span></div>
+          </div>
+        </div>
+
+        <div class="ai-card">
+          <div class="ai-header">
+            <div class="ai-orb">
+              <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div class="ai-title">Mistral AI Insight</div>
+            <div class="ai-badge">Cloudflare Workers AI</div>
+          </div>
+          <div class="ai-body" id="ai-insight">
+            <div id="ai-response">Ask something about your farm 👇</div>
+
+            <div class="ai-input-box">
+              <input type="text" id="ai-question" placeholder="e.g. Should I irrigate today?">
+              <button onclick="askCustom()">Ask</button>
+            </div>
+          </div>
+          <div class="ai-actions">
+            <button class="btn" onclick="askMistral()">Ask about current conditions ↗</button>
+            <button class="btn" onclick="askIrrigation()">Irrigation advice ↗</button>
+          </div>
+        </div>
+
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-header"><div class="chart-title">Temperature</div><div class="chart-sub">Last 12 hours</div></div>
+            <div style="position:relative;height:160px"><canvas id="tempChart" role="img" aria-label="Temperature over last 12 hours"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div class="chart-title">Soil Moisture</div><div class="chart-sub">Last 12 hours</div></div>
+            <div style="position:relative;height:160px"><canvas id="soilChart" role="img" aria-label="Soil moisture over last 12 hours"></canvas></div>
+          </div>
+        </div>
+        <div class="chart-card-full">
+          <div class="chart-header"><div class="chart-title">Rainfall</div><div class="chart-sub">Last 12 hours (mm)</div></div>
+          <div style="position:relative;height:140px"><canvas id="rainChart" role="img" aria-label="Rainfall last 12 hours"></canvas></div>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="section" id="section-history">
+        <div class="section-head">
+          <div class="section-title">Sensor History</div>
+          <select onchange=""><option>Last 7 days</option><option>Last 30 days</option><option>Last 90 days</option></select>
+        </div>
+        <div class="chart-card-full">
+          <div class="chart-header"><div class="chart-title">Temperature — 7-day trend</div></div>
+          <div style="position:relative;height:200px"><canvas id="histTempChart" role="img" aria-label="7 day temperature trend"></canvas></div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-header"><div class="chart-title">Soil Moisture</div><div class="chart-sub">7 days</div></div>
+            <div style="position:relative;height:160px"><canvas id="histSoilChart" role="img" aria-label="7 day soil moisture"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><div class="chart-title">Rainfall</div><div class="chart-sub">7 days (mm)</div></div>
+            <div style="position:relative;height:160px"><canvas id="histRainChart" role="img" aria-label="7 day rainfall"></canvas></div>
+          </div>
+        </div>
+        <div class="list-card">
+          <div class="list-head">Event Log</div>
+          <div class="list-item">Soil moisture dropped below 50% in Zone 3 <span class="tag tag-amber">Apr 8</span></div>
+          <div class="list-item">Heavy rainfall detected — 32mm <span class="tag tag-amber">Apr 7</span></div>
+          <div class="list-item">Temperature spike 36°C in Zone 2 <span class="tag tag-red">Apr 6</span></div>
+          <div class="list-item">All sensors reporting normal <span class="tag tag-green">Apr 5</span></div>
+          <div class="list-item">Irrigation cycle triggered automatically <span class="tag tag-green">Apr 4</span></div>
+          <div class="list-item">Rain sensor offline — reconnected <span class="tag tag-amber">Apr 3</span></div>
+        </div>
+      </div>
+
+      <!-- CROPS -->
+      <div class="section" id="section-crops">
+        <div class="section-head">
+          <div class="section-title">Crop Activity</div>
+          <select><option>All stages</option><option>Sowing</option><option>Growing</option><option>Harvesting</option></select>
+        </div>
+        <div class="crops-grid">
+          <div class="crop-card selected" onclick="selectCrop(this)">
+            <div class="crop-emoji">🍅</div>
+            <div class="crop-name">Tomatoes</div>
+            <div class="crop-stage">Growing · Day 34 of 75</div>
+            <div class="crop-progress"><div class="crop-bar" style="width:68%"></div></div>
+          </div>
+          <div class="crop-card" onclick="selectCrop(this)">
+            <div class="crop-emoji">🌾</div>
+            <div class="crop-name">Wheat</div>
+            <div class="crop-stage">Sowing · Day 5 of 120</div>
+            <div class="crop-progress"><div class="crop-bar" style="width:10%"></div></div>
+          </div>
+          <div class="crop-card" onclick="selectCrop(this)">
+            <div class="crop-emoji">🌽</div>
+            <div class="crop-name">Maize</div>
+            <div class="crop-stage">Harvesting · Day 80 of 85</div>
+            <div class="crop-progress"><div class="crop-bar harvest" style="width:95%"></div></div>
+          </div>
+          <div class="crop-card" onclick="selectCrop(this)">
+            <div class="crop-emoji">🫘</div>
+            <div class="crop-name">Soybeans</div>
+            <div class="crop-stage">Growing · Day 21 of 95</div>
+            <div class="crop-progress"><div class="crop-bar" style="width:42%"></div></div>
+          </div>
+          <div class="crop-card" onclick="selectCrop(this)">
+            <div class="crop-emoji">🌻</div>
+            <div class="crop-name">Sunflower</div>
+            <div class="crop-stage">Growing · Day 15 of 100</div>
+            <div class="crop-progress"><div class="crop-bar" style="width:30%"></div></div>
+          </div>
+          <div class="crop-card crop-add" onclick="addCrop()">
+            <div class="crop-add-icon">+</div>
+            <div class="crop-add-text">Add new crop</div>
+          </div>
+        </div>
+        <div class="ai-card">
+          <div class="ai-header">
+            <div class="ai-orb"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+            <div class="ai-title">Crop Recommendations</div>
+            <div class="ai-badge">Powered by Mistral</div>
+          </div>
+          <div class="ai-body" id="crop-insight"><span class="ai-loading">Add your API key in Settings to get AI crop recommendations...</span></div>
+          <div class="ai-actions">
+            <button class="btn" onclick="askCropAdvice()">Get crop advice ↗</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- IRRIGATION -->
+      <div class="section" id="section-irrigation">
+        <div class="section-head">
+          <div class="section-title">Irrigation Control</div>
+          <button class="btn btn-primary" onclick="autoIrrigate()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+            Auto-Irrigate All
+          </button>
+        </div>
+        <div class="zone-grid">
+          <div class="zone-card">
+            <div class="zone-header">
+              <div><div class="zone-name">Zone 1 — North Field</div><div class="zone-crop">Tomatoes</div></div>
+              <span class="tag tag-green">Active</span>
+            </div>
+            <div class="zone-moisture"><div class="zone-mval">62</div><div class="zone-munit">% moisture</div></div>
+            <div class="zone-bar-wrap"><div class="zone-bar" style="width:62%;background:#3b82f6"></div></div>
+            <div class="zone-foot"><div class="zone-last">Last: 6h ago</div><button class="irrigate-btn" onclick="toggleIrr(this)">Irrigate now</button></div>
+          </div>
+          <div class="zone-card">
+            <div class="zone-header">
+              <div><div class="zone-name">Zone 2 — East Field</div><div class="zone-crop">Wheat</div></div>
+              <span class="tag tag-amber">Low</span>
+            </div>
+            <div class="zone-moisture"><div class="zone-mval">38</div><div class="zone-munit">% moisture</div></div>
+            <div class="zone-bar-wrap"><div class="zone-bar" style="width:38%;background:#f59e0b"></div></div>
+            <div class="zone-foot"><div class="zone-last">Last: 18h ago</div><button class="irrigate-btn active" onclick="toggleIrr(this)">Running ●</button></div>
+          </div>
+          <div class="zone-card">
+            <div class="zone-header">
+              <div><div class="zone-name">Zone 3 — South Field</div><div class="zone-crop">Maize</div></div>
+              <span class="tag tag-green">Good</span>
+            </div>
+            <div class="zone-moisture"><div class="zone-mval">71</div><div class="zone-munit">% moisture</div></div>
+            <div class="zone-bar-wrap"><div class="zone-bar" style="width:71%;background:#22c55e"></div></div>
+            <div class="zone-foot"><div class="zone-last">Last: 2h ago</div><button class="irrigate-btn" onclick="toggleIrr(this)">Irrigate now</button></div>
+          </div>
+          <div class="zone-card">
+            <div class="zone-header">
+              <div><div class="zone-name">Zone 4 — West Field</div><div class="zone-crop">Soybeans</div></div>
+              <span class="tag tag-blue">Scheduled</span>
+            </div>
+            <div class="zone-moisture"><div class="zone-mval">55</div><div class="zone-munit">% moisture</div></div>
+            <div class="zone-bar-wrap"><div class="zone-bar" style="width:55%;background:#3b82f6"></div></div>
+            <div class="zone-foot"><div class="zone-last">Next: in 2h</div><button class="irrigate-btn" onclick="toggleIrr(this)">Irrigate now</button></div>
+          </div>
+        </div>
+        <div class="ai-card">
+          <div class="ai-header">
+            <div class="ai-orb"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+            <div class="ai-title">Irrigation Recommendations</div>
+            <div class="ai-badge">Powered by Mistral</div>
+          </div>
+          <div class="ai-body" id="irr-insight"><span class="ai-loading">Add your API key in Settings to get AI irrigation advice...</span></div>
+          <div class="ai-actions"><button class="btn" onclick="askIrrigation()">Get irrigation advice ↗</button></div>
+        </div>
+      </div>
+
+      <!-- ALERTS -->
+      <div class="section" id="section-alerts">
+        <div class="section-head">
+          <div class="section-title">Alerts & Notifications</div>
+          <button class="btn" onclick="document.querySelectorAll('.alert-item .btn-xs').forEach(b=>b.textContent='Resolved')">Mark all resolved</button>
+        </div>
+        <div class="list-card">
+          <div class="alert-item">
+            <div class="alert-severity sev-red"></div>
+            <div style="flex:1">
+              <div class="alert-msg">High temperature detected — 36°C on Zone 2</div>
+              <div class="alert-meta">Today, 10:14 AM · Critical</div>
+            </div>
+            <div class="alert-actions"><span class="tag tag-red" style="font-size:10px">Unresolved</span><button class="btn-xs">Resolve</button></div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-severity sev-amber"></div>
+            <div style="flex:1">
+              <div class="alert-msg">Soil moisture low in Zone 3 — consider irrigation</div>
+              <div class="alert-meta">Today, 08:32 AM · Warning</div>
+            </div>
+            <div class="alert-actions"><span class="tag tag-amber" style="font-size:10px">Acknowledged</span><button class="btn-xs">Resolve</button></div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-severity sev-amber"></div>
+            <div style="flex:1">
+              <div class="alert-msg">Rain sensor offline — check connection</div>
+              <div class="alert-meta">Yesterday, 06:55 PM · Warning</div>
+            </div>
+            <div class="alert-actions"><span class="tag tag-amber" style="font-size:10px">Unresolved</span><button class="btn-xs">Resolve</button></div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-severity sev-green"></div>
+            <div style="flex:1">
+              <div class="alert-msg">Irrigation cycle completed successfully</div>
+              <div class="alert-meta">Yesterday, 04:00 AM · Info</div>
+            </div>
+            <div class="alert-actions"><span class="tag tag-green" style="font-size:10px">Resolved</span></div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-severity sev-green"></div>
+            <div style="flex:1">
+              <div class="alert-msg">All sensors back online</div>
+              <div class="alert-meta">Apr 7, 09:12 AM · Info</div>
+            </div>
+            <div class="alert-actions"><span class="tag tag-green" style="font-size:10px">Resolved</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="section" id="section-settings">
+        <div class="section-head"><div class="section-title">Settings</div></div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Cloudflare Mistral API</div>
+          <div class="settings-row">
+            <div class="settings-label">
+              <span>API Key</span>
+              <span class="settings-hint">Cloudflare Workers AI API key</span>
+            </div>
+            <span class="conn-status conn-none" id="conn-indicator">Not connected</span>
+          </div>
+          <div style="padding:4px 0 8px">
+            <div class="api-input-row">
+              <input type="password" id="cf-key" placeholder="Enter your Cloudflare Workers AI API key">
+              <button class="btn btn-primary" onclick="saveKey()">Save</button>
+            </div>
+          </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Sensor Thresholds</div>
+          <div class="settings-row">
+            <div class="settings-label"><span>Temperature alert above</span><span class="settings-hint">°C — triggers red alert</span></div>
+            <input type="number" value="35">
+          </div>
+          <div class="settings-row">
+            <div class="settings-label"><span>Soil moisture alert below</span><span class="settings-hint">% — triggers irrigation prompt</span></div>
+            <input type="number" value="40">
+          </div>
+          <div class="settings-row">
+            <div class="settings-label"><span>Rainfall alert above</span><span class="settings-hint">mm per 24h</span></div>
+            <input type="number" value="25">
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Notifications</div>
+          <div class="settings-row">
+            <div class="settings-label"><span>Push notifications</span><span class="settings-hint">Browser push alerts</span></div>
+            <div class="toggle-wrap"><button class="toggle" onclick="this.classList.toggle('off')"></button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label"><span>Email alerts</span><span class="settings-hint">Send critical alerts by email</span></div>
+            <div class="toggle-wrap"><button class="toggle off" onclick="this.classList.toggle('off')"></button></div>
+          </div>
+          <div class="settings-row">
+            <div class="settings-label"><span>AI daily summary</span><span class="settings-hint">Morning Mistral farm report</span></div>
+            <div class="toggle-wrap"><button class="toggle" onclick="this.classList.toggle('off')"></button></div>
+          </div>
+        </div>
+
+        <div class="settings-group">
+          <div class="settings-group-title">Data & Sync</div>
+          <div class="settings-row">
+            <span>Refresh interval</span>
+            <select><option>30 seconds</option><option>1 minute</option><option>5 minutes</option><option>Manual only</option></select>
+          </div>
+          <div class="settings-row">
+            <span>Data retention</span>
+            <select><option>30 days</option><option>90 days</option><option>1 year</option></select>
+          </div>
+          <div class="settings-row">
+            <span>Units</span>
+            <select><option>Metric (°C, mm)</option><option>Imperial (°F, in)</option></select>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
