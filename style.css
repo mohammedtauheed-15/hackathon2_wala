@@ -1,4 +1,4 @@
-<style>
+
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -347,4 +347,4 @@
 .ai-input-box button:hover {
   background: var(--green-800);
 }
-</style>
+
